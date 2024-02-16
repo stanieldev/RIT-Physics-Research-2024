@@ -1,0 +1,52 @@
+{
+    "h": [
+        "1*IXXIIIII",
+        "1*IIIXXIII",
+        "1*IIIIIXXI",
+        "1*IYYIIIII",
+        "1*IIIYYIII",
+        "1*IIIIIYYI",
+        "1*IZZIIIII",
+        "1*IIIZZIII",
+        "1*IIIIIZZI",
+        "1*XXIIIIII",
+        "1*IIXXIIII",
+        "1*IIIIXXII",
+        "1*IIIIIIXX",
+        "1*YYIIIIII",
+        "1*IIYYIIII",
+        "1*IIIIYYII",
+        "1*IIIIIIYY",
+        "1*ZZIIIIII",
+        "1*IIZZIIII",
+        "1*IIIIZZII",
+        "1*IIIIIIZZ"
+    ],
+    "generators": [
+        [
+            "0.5*IXXIIIII",
+            "0.5*IIIXXIII",
+            "0.5*IIIIIXXI",
+            "0.5*IYYIIIII",
+            "0.5*IIIYYIII",
+            "0.5*IIIIIYYI",
+            "0.5*IZZIIIII",
+            "0.5*IIIZZIII",
+            "0.5*IIIIIZZI"
+        ],
+        [
+            "0.5*XXIIIIII",
+            "0.5*IIXXIIII",
+            "0.5*IIIIXXII",
+            "0.5*IIIIIIXX",
+            "0.5*YYIIIIII",
+            "0.5*IIYYIIII",
+            "0.5*IIIIYYII",
+            "0.5*IIIIIIYY",
+            "0.5*ZZIIIIII",
+            "0.5*IIZZIIII",
+            "0.5*IIIIZZII",
+            "0.5*IIIIIIZZ"
+        ]
+    ]
+}

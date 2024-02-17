@@ -17,12 +17,12 @@ parser.add_argument("-n", "--nsample", type=int, default=100,
                     help="sample size. 100(default)")
 
 # Run VQE
-vqe = VQE()
+vqe = VQE(imp_file="inp.py")
 args = parser.parse_args()
 
 if args.mode == 0:
     vqe.minimize_energy()
-    fid = vqe.get_fidelity_with_params(vqe._inp["x0_list"])
+    fid = vqe.get_fidelity_with_params(vqe.get_x0_list())
     print(f"initial fidelity: {fid:.6f}")
     fid = vqe.get_fidelity_with_params(vqe._res_opt.x)
     print(f"final fidelity: {fid:.6f}")

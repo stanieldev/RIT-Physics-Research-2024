@@ -4,21 +4,22 @@ from qiskit_aer.noise import NoiseModel
 from qiskit_algorithms.optimizers.spsa import SPSA
 from qiskit_ibm_provider import IBMProvider
 import numpy, os, pickle
+
 device = "ibmq_mumbai"
 nq = 8
 nparams = 2
 ### initial state preparation: product of bell pairs.
 circ = QuantumCircuit(nq)
-for i in range(nq//2):
-    circ.x(2*i+1)
-    circ.h(2*i)
-    circ.z(2*i)
-    circ.z(2*i+1)
-    circ.cx(2*i, 2*i+1)
+for i in range(nq // 2):
+    circ.x(2 * i + 1)
+    circ.h(2 * i)
+    circ.z(2 * i)
+    circ.z(2 * i + 1)
+    circ.cx(2 * i, 2 * i + 1)
 # print(circ.draw())
 ### estimator
 seed = None
-shots = 2**10
+shots = 2 ** 10
 nm_fname = f"{device}_nm.pkl"
 if os.path.isfile(nm_fname):
     with open(nm_fname, "rb") as f:
@@ -30,9 +31,9 @@ else:
     coupling_map = backend.configuration().coupling_map
     with open(nm_fname, "wb") as f:
         pickle.dump([coupling_map, noise_model],
-                f,
-                pickle.HIGHEST_PROTOCOL,
-                )
+                    f,
+                    pickle.HIGHEST_PROTOCOL,
+                    )
 estimator = Estimator(
     backend_options={
         "method": "density_matrix",
@@ -41,30 +42,31 @@ estimator = Estimator(
     },
     run_options={"seed": seed, "shots": shots},
     transpile_options={"seed_transpiler": seed,
-        "initial_layout": [0, 1, 4, 7, 10, 12, 13, 14],
-        # "initial_layout": [12, 15, 18, 21, 23, 24, 25, 26],  # worst connection
-        },
+                       "initial_layout": [0, 1, 4, 7, 10, 12, 13, 14],
+                       # "initial_layout": [12, 15, 18, 21, 23, 24, 25, 26],  # worst connection
+                       },
     approximation=False,
 )
 ### optimizer
 optimizer = SPSA(maxiter=100,
-        blocking=True,
-        learning_rate=0.005,
-        perturbation=0.005,
-        allowed_increase=0.5,
-        )
-inp = {
-        "hpath": "../../../",
-        "nq": nq,
-        "circ_init": circ,
-        "x0_list": [numpy.pi/5]*nparams,
-        "bounds": [(-numpy.pi, numpy.pi)]*nparams,
-        "estimator": estimator,
-        "optimizer": optimizer,
-        "mode_aml": 0,
-        "err_exact": 1e-6,
-        "err": 0.001,
-        "tol_prediction": 0.001,
-        "mode_init_check": 0,
-        "tpar": 2,
-        }
+                 blocking=True,
+                 learning_rate=0.005,
+                 perturbation=0.005,
+                 allowed_increase=0.5,
+                 )
+
+INP = {
+    "hpath": "../../../",
+    "nq": nq,
+    "circ_init": circ,
+    "x0_list": [numpy.pi / 5] * nparams,
+    "bounds": [(-numpy.pi, numpy.pi)] * nparams,
+    "estimator": estimator,
+    "optimizer": optimizer,
+    "mode_aml": 0,
+    "err_exact": 1e-6,
+    "err": 0.001,
+    "tol_prediction": 0.001,
+    "mode_init_check": 0,
+    "tpar": 2,
+}

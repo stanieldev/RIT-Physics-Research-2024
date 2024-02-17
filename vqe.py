@@ -7,9 +7,16 @@ from qiskit.circuit.library import PauliEvolutionGate
 from qiskit.quantum_info import SparsePauliOp, Statevector
 
 
+def get_inp(imp_file):
+    var_global, var_local = {}, {}
+    exec(open(imp_file, "r").read(), var_global, var_local)
+    return var_local["INP"]
+
+
+
 class VQE:
-    def __init__(self):
-        self._inp = get_inp()
+    def __init__(self, imp_file="inp.py"):
+        self._inp = get_inp(imp_file)
         self.load_incar()
         self.set_hamilt()
         self._nq = self._hop.num_qubits
@@ -29,6 +36,22 @@ class VQE:
         self.set_exact_gs()
         self.check_init_state(self._inp.get("mode_init_check", 1))
         self._records = {}
+
+    def get_x0_list(self):
+        return self._inp["x0_list"]
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def load_incar(self):
         path = self._inp.get("hpath", ".")
@@ -217,11 +240,6 @@ class VQE:
 
 
 
-def get_inp(fname="inp.py"):
-    vglobal = {}
-    vlocal = {}
-    exec(open(fname, "r").read(), vglobal, vlocal)
-    return vlocal["inp"]
 
 
 def chk_fs_orthonormal(fs):

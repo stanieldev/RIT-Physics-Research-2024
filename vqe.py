@@ -13,21 +13,22 @@ def get_inp(imp_file):
     return var_local["INP"]
 
 
+
 class VQE:
     def __init__(self, imp_file="inp.py"):
         self._inp = get_inp(imp_file)
         self.load_incar()
         self.set_hamilt()
         self._nq = self._hop.num_qubits
-        assert (self._inp["nq"] == self._nq)
+        assert(self._inp["nq"] == self._nq)
         self.set_param_circ()
         mode_aml = self._inp.get("mode_aml", 0)
         if mode_aml > 0:
             from aml import AML
             self._aml = AML(
-                t=self._inp["tpar"],
-                nranges=self._inp.get("nranges", None),
-                mode=mode_aml)
+                    t=self._inp["tpar"],
+                    nranges=self._inp.get("nranges", None),
+                    mode=mode_aml)
             self.set_exact_points(err_exact=self._inp["err_exact"])
         else:
             self._aml = None
@@ -39,20 +40,33 @@ class VQE:
     def get_x0_list(self):
         return self._inp["x0_list"]
 
+
+
+
+
+
+
+
+
+
+
+
+
+
     def load_incar(self):
         path = self._inp.get("hpath", ".")
         nlayers = self._inp.get("nlayers", 1)
         self._incar = json.load(open(f"./incar", "r"))
-        self._incar["generators"] = self._incar["generators"] * nlayers
+        self._incar["generators"] = self._incar["generators"]*nlayers
 
     def set_hamilt(self):
         self._hop = SparsePauliOp.from_list(
-            [(x.split('*')[1], float(x.split('*')[0]))
-             for x in self._incar["h"]])
+                [(x.split('*')[1], float(x.split('*')[0]))
+                for x in self._incar["h"]])
 
     def set_param_circ(self):
         self._params = [Parameter(str(i))
-                        for i in range(len(self._incar["generators"]))]
+                for i in range(len(self._incar["generators"]))]
         circ = self._inp["circ_init"].copy()
         for param, oplabels in zip(self._params, self._incar["generators"]):
             for oplabel in oplabels:
@@ -64,19 +78,19 @@ class VQE:
     def save_param_circ(self):
         with open("pcirc.pkl", "wb") as f:
             pickle.dump(self._param_circ,
-                        f,
-                        pickle.HIGHEST_PROTOCOL,
-                        )
+                f,
+                pickle.HIGHEST_PROTOCOL,
+                )
 
     def save_records(self):
         with open("records.pkl", "wb") as f:
             pickle.dump(self._records,
-                        f,
-                        pickle.HIGHEST_PROTOCOL,
-                        )
+                f,
+                pickle.HIGHEST_PROTOCOL,
+                )
 
     def get_statevector_with_params(self, xlist):
-        state = Statevector.from_int(0, 2 ** self._nq)
+        state = Statevector.from_int(0, 2**self._nq)
         binds = {th: val for th, val in zip(self._params, xlist)}
         circ = self._param_circ.bind_parameters(binds)
         state = state.evolve(circ)
@@ -84,23 +98,23 @@ class VQE:
 
     def get_fidelity_with_params(self, xlist):
         state = self.get_statevector_with_params(xlist)
-        fid = abs(self._gs[1].dot(state._data)) ** 2
+        fid = abs(self._gs[1].dot(state._data))**2
         return fid
 
     def check_init_state(self, mode):
         # check initial state
-        state = self.get_statevector_with_params([0] * len(self._params))
+        state = self.get_statevector_with_params([0]*len(self._params))
         if mode > 0:
             # get h1
             # see https://scipost.org/SciPostPhys.6.3.029
             h1op = SparsePauliOp.from_list(
-                [(x.split('*')[1], float(x.split('*')[0]))
-                 for x in self._incar["generators"][-1]])
+                    [(x.split('*')[1], float(x.split('*')[0]))
+                    for x in self._incar["generators"][-1]])
             h1mat = h1op.to_matrix()
             w, v = numpy.linalg.eigh(h1mat)
             expval = state.expectation_value(h1op)
-            assert (abs(w[0] - expval) < 1e-6)
-            assert (abs(abs(v[:, 0].dot(state._data)) - 1) < 1e-6)
+            assert(abs(w[0] - expval) < 1e-6)
+            assert(abs(abs(v[:, 0].dot(state._data))-1) < 1e-6)
         res = state.expectation_value(self._hop)
         print(f"initial state energy exact = {res.real:.6f}")
 
@@ -112,24 +126,24 @@ class VQE:
 
     def get_energy_sv(self, xlist):
         estimator = Estimator_aer(
-            backend_options={
-                "method": "statevector",
-            },
-            run_options={"shots": None},
-            approximation=True,
-        )
+                backend_options={
+                        "method": "statevector",
+                        },
+                run_options={"shots": None},
+                approximation=True,
+    	        )
         job = estimator.run([self._param_circ],
-                            [self._hop],
-                            xlist,
-                            )
+                [self._hop],
+                xlist,
+                )
         return job.result().values[0]
 
     def get_energy(self, xlist):
         if self._inp["estimator"] is not None:
             job = self._inp["estimator"].run([self._param_circ],
-                                             [self._hop],
-                                             xlist,
-                                             )
+                    [self._hop],
+                    xlist,
+                    )
             res = job.result().values[0]
         else:
             keep_try = True
@@ -138,9 +152,9 @@ class VQE:
                     with Session(service=self._inp["service"], backend=self._inp["backend"]) as session:
                         estimator = Estimator(session=session, options=self._inp["options"])
                         job = estimator.run([self._param_circ],
-                                            [self._hop],
-                                            xlist,
-                                            )
+                                [self._hop],
+                                xlist,
+                                )
                         session.close()
                     res = job.result().values[0]
                     keep_try = False
@@ -151,7 +165,6 @@ class VQE:
 
     def _fun_evaluate_energy(self):
         eval_count = 0
-
         def evaluate_energy(xlist):
             nonlocal eval_count
             eval_count += 1
@@ -179,7 +192,7 @@ class VQE:
                 self._aml.add_training_data([xlist], [e_calc], err=self._inp["err"])
                 e_est2, err_est2 = self._aml.prediction(xlist)
                 print(f"e_est: {e_est:.6f} +/- {err_est:.2e}, e_calc: {e_calc:.6f}," +
-                      f" e_est2: {e_est2:.6f} +/- {err_est2:.2e} at x: {numpy.round(xlist, decimals=3)}")
+                        f" e_est2: {e_est2:.6f} +/- {err_est2:.2e} at x: {numpy.round(xlist, decimals=3)}")
                 # use new prediction
                 e_est = e_est2
                 self._records["is_prediction"].append(0)
@@ -196,9 +209,9 @@ class VQE:
         else:
             cost_fun = self._fun_evaluate_energy_al()
         res = self._inp["optimizer"].minimize(cost_fun,
-                                              self._inp["x0_list"],
-                                              bounds=self._inp["bounds"],
-                                              )
+                self._inp["x0_list"],
+                bounds=self._inp["bounds"],
+                )
         self._res_opt = res
         e = self.get_energy(res.x)
         print(f"minimal energy finally measured: {e:.6f}")
@@ -211,7 +224,7 @@ class VQE:
         e_list = []
         for x in x_list:
             e = self.get_energy(x)
-            e_list.append(e ** 2)
+            e_list.append(e**2)
             print(e)
         t_est, t_std = numpy.mean(e_list), numpy.std(e_list)
         print(f"estimated t: {t_est:.2e} with std: {t_std:.2e}")
@@ -226,20 +239,23 @@ class VQE:
         self._aml.add_training_data(xlists, ylist, err=err_exact)
 
 
+
+
+
 def chk_fs_orthonormal(fs):
     import scipy.integrate as integrate
-    symbols = sorted(fs[0].free_symbols, key=lambda s: s.name)
-    assert (len(symbols) == 1)
+    symbols = sorted(fs[0].free_symbols, key = lambda s: s.name)
+    assert(len(symbols) == 1)
     symbol = symbols[0]
     for i, fi in enumerate(fs):
-        for j, fj in enumerate(fs[:i + 1]):
-            fij = fi * fj
+        for j, fj in enumerate(fs[:i+1]):
+            fij = fi*fj
             # print(fij)
             result = integrate.quad(
-                lambda x: float(fij.subs([[symbol, x]]).evalf()),
-                -numpy.pi, numpy.pi)[0]
+                    lambda x: float(fij.subs([[symbol, x]]).evalf()),
+                    -numpy.pi, numpy.pi)[0]
             # print(f"ovlp ({i}, {j}): {result}")
             if i == j:
-                assert (abs(result - 1) < 1e-7)
+                assert(abs(result-1) < 1e-7)
             else:
-                assert (abs(result) < 1e-7)
+                assert(abs(result) < 1e-7)

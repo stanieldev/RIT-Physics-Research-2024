@@ -1,8 +1,6 @@
 # Manage imports
 import argparse
-
-
-from source.vqe import VQE
+from vqe import VQE
 
 
 
@@ -13,10 +11,22 @@ parser.add_argument("-m", "--mode", type=int, default=0,
                     help="job mode. 0: vqe calculation (default); otherwise: estimate t.")
 parser.add_argument("-n", "--nsample", type=int, default=100,
                     help="sample size. 100(default)")
-
-# Run VQE
-vqe = VQE(imp_file="source/inp.py")
 args = parser.parse_args()
+
+
+
+
+
+# Run VQE solver
+INP_FILE = "source/inp.py"
+vqe = VQE(
+    imp_file=INP_FILE
+)
+
+
+
+
+
 
 if args.mode == 0:
     vqe.minimize_energy()

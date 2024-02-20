@@ -1,5 +1,14 @@
-# developed in c2qa (ykent@iastate.edu).
-import json, numpy, pickle
+""" VQE class for variational quantum eigensolver.
+Author : XXX (ykent@iastate.edu), Stanley Goodwin (sfg5318@rit.edu)
+Date : 02/20/2024
+Purpose : This file is used to run the VQE algorithm on the IBM Quantum
+          Experience backend. This file is included in the repository.
+"""
+
+# Manage imports
+import json
+import numpy
+import pickle
 from qiskit_aer.primitives import Estimator as Estimator_aer
 from qiskit_ibm_runtime import Session, Estimator
 from qiskit.circuit import Parameter
@@ -7,24 +16,38 @@ from qiskit.circuit.library import PauliEvolutionGate
 from qiskit.quantum_info import SparsePauliOp, Statevector
 
 
-def get_inp(imp_file):
+
+
+
+
+
+
+def get_inp(inp_file):
     var_global, var_local = {}, {}
-    exec(open(imp_file, "r").read(), var_global, var_local)
+    exec(open(inp_file, "r").read(), var_global, var_local)
     return var_local["INP"]
 
 
 
 class VQE:
     def __init__(self, imp_file="inp.py"):
+
+        # Load the input file
         self._inp = get_inp(imp_file)
+
+        # Load the INCAR file
         self.load_incar()
+
+        # Set the Hamiltonian
         self.set_hamilt()
+
+        # Set the parameter circuit
         self._nq = self._hop.num_qubits
         assert(self._inp["nq"] == self._nq)
         self.set_param_circ()
         mode_aml = self._inp.get("mode_aml", 0)
         if mode_aml > 0:
-            from aml import AML
+            from source.aml import AML
             self._aml = AML(
                     t=self._inp["tpar"],
                     nranges=self._inp.get("nranges", None),
@@ -76,14 +99,14 @@ class VQE:
         self._param_circ = circ
 
     def save_param_circ(self):
-        with open("pcirc.pkl", "wb") as f:
+        with open("source/pcirc.pkl", "wb") as f:
             pickle.dump(self._param_circ,
                 f,
                 pickle.HIGHEST_PROTOCOL,
                 )
 
     def save_records(self):
-        with open("records.pkl", "wb") as f:
+        with open("source/records.pkl", "wb") as f:
             pickle.dump(self._records,
                 f,
                 pickle.HIGHEST_PROTOCOL,

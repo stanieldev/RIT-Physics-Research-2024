@@ -1,6 +1,7 @@
 pyscf
 cmake
 matplotlib
+numpy
 qiskit
 qiskit-aer==0.12.2
 qiskit-algorithms==0.2.1
@@ -11,4 +12,3 @@ qiskit-ibmq-provider==0.18.1
 qiskit-ignis==0.6.0
 qiskit-nature==0.6.2
 qiskit-terra==0.25.1
-numpy

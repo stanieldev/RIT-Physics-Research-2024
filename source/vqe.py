@@ -56,7 +56,7 @@ class VQE:
     def load_incar(self):
         path = self._inp.get("hpath", ".")
         nlayers = self._inp.get("nlayers", 1)
-        self._incar = json.load(open(f"./incar", "r"))
+        self._incar = json.load(open(f"source/incar", "r"))
         self._incar["generators"] = self._incar["generators"]*nlayers
 
     def set_hamilt(self):

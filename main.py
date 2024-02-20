@@ -1,12 +1,10 @@
 # Manage imports
 import argparse
-import os
-from qiskit_ibm_provider import IBMProvider
-from vqe import VQE
 
-# Environment variables
-IBM_API_KEY = os.environ.get("IBM_API_KEY")
-IBMProvider.save_account(IBM_API_KEY, overwrite=True)
+
+from source.vqe import VQE
+
+
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description=
@@ -17,7 +15,7 @@ parser.add_argument("-n", "--nsample", type=int, default=100,
                     help="sample size. 100(default)")
 
 # Run VQE
-vqe = VQE(imp_file="inp.py")
+vqe = VQE(imp_file="source/inp.py")
 args = parser.parse_args()
 
 if args.mode == 0:

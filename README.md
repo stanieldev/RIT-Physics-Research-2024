@@ -8,11 +8,15 @@ To install the required packages, run the following command:
 ```bash
 pip install -r requirements.txt
 ```
+If you have not already saved your IBMQ account, you can do so by adding your key to running the following command:
+```bash
+python .\_IBM_API_KEY.py
+```
 
 ## Usage
 To run the project, use the following command:
 ```bash
-python vqe_drive.py
+python main.py
 ```
 As of right now, the command-line arguments are not used in the project. The user can change the parameters in the `vqe_drive.py` file.
 

@@ -25,15 +25,16 @@ from qiskit.quantum_info import SparsePauliOp, Statevector
 def get_inp(inp_file):
     var_global, var_local = {}, {}
     exec(open(inp_file, "r").read(), var_global, var_local)
-    return var_local["INP"]
+    return var_local["inp"]
 
 
 
-class VQE:
-    def __init__(self, imp_file="inp.py"):
+class VariationalQuantumEigensolver:
+
+    def __init__(self, inp_file="inp.py"):
 
         # Load the input file
-        self._inp = get_inp(imp_file)
+        self._inp = get_inp(inp_file)
 
         # Load the INCAR file
         self.load_incar()

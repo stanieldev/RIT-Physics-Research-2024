@@ -55,7 +55,7 @@ optimizer = SPSA(maxiter=100,
                  allowed_increase=0.5,
                  )
 
-INP = {
+inp = {
     "hpath": "../../../",
     "nq": nq,
     "circ_init": circ,

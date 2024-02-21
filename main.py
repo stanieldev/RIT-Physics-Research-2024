@@ -19,8 +19,10 @@ args = parser.parse_args()
 
 # Run VQE solver
 INP_FILE = "source/inp.py"
+INCAR_FILE = "source/incar"
 vqe = VariationalQuantumEigensolver(
-    inp_file=INP_FILE
+    inp_file=INP_FILE,
+    incar_file=INCAR_FILE
 )
 
 

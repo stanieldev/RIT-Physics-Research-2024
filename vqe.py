@@ -177,6 +177,10 @@ class VariationalQuantumEigensolver:
 
         return evaluate_energy
 
+
+    # param_circ comes from a list of parameters from INCAR generators.
+    # hamiltonian comes from a sparse pauli matrix from INCAR H list.
+    # x_list is the initial Theta Angles
     def _fun_evaluate_energy_al(self):
         '''active-learning method.
         '''
@@ -188,6 +192,7 @@ class VariationalQuantumEigensolver:
         def evaluate_energy(xlist):
             nonlocal eval_count
             eval_count += 1
+
             e_est, err_est = self._aml.prediction(xlist)
             print(f"predition {eval_count}: {e_est:.6f}, err_est:{err_est:.1e} at xs: {numpy.round(xlist, decimals=4)}")
             if err_est > self._inp["tol_prediction"]:
@@ -207,13 +212,16 @@ class VariationalQuantumEigensolver:
         return evaluate_energy
 
     def minimize_energy(self):
+        IS_AI = False
         if self._aml is None:
             cost_fun = self._fun_evaluate_energy()
         else:
             cost_fun = self._fun_evaluate_energy_al()
+            IS_AI = True
         res = self._inp["optimizer"].minimize(cost_fun,
                                               self._inp["x0_list"],
                                               bounds=self._inp["bounds"],
+                                              AI=IS_AI
                                               )
         self._res_opt = res
         e = self.get_energy(res.x)

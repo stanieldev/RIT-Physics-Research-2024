@@ -1,9 +1,11 @@
 from qiskit.circuit import QuantumCircuit
 from qiskit_aer.primitives import Estimator
 from qiskit_aer.noise import NoiseModel
-from qiskit_algorithms.optimizers.spsa import SPSA
 from qiskit_ibm_provider import IBMProvider
 import numpy, os, pickle
+
+from gradient_descent import GradientDescent
+from qiskit_algorithms.optimizers import GradientDescent as GDQiskit
 
 device = "ibmq_mumbai"
 nq = 8
@@ -48,12 +50,16 @@ estimator = Estimator(
     approximation=False,
 )
 ### optimizer
-optimizer = SPSA(maxiter=100,
+optimizer = GradientDescent(maxiter=100,
                  blocking=True,
                  learning_rate=0.005,
                  perturbation=0.005,
-                 allowed_increase=0.5,
+                 allowed_increase=0.5
                  )
+# optimizer = GDQiskit(maxiter=100,
+#                     learning_rate=0.005,
+#                     perturbation=0.005,
+#                     )
 
 inp = {
     "hpath": "../../../",

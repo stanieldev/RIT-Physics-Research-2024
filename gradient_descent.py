@@ -87,7 +87,7 @@ class GradientDescent(SPSA):
             delta2 = deltas2[i] if self.second_order else None
 
 # TODO WHERE SAMPLING IS DONE BEGINNING --------------------------------------------------------------------------------
-            value_sample, gradient_sample, hessian_sample = self._point_sample(
+            value_sample, gradient_sample, _ = self._point_sample(
                 loss, x, eps, delta1, delta2
             )
 # TODO WHERE SAMPLING IS DONE END --------------------------------------------------------------------------------------
@@ -95,7 +95,7 @@ class GradientDescent(SPSA):
             gradient_estimate += gradient_sample
 
             if self.second_order:
-                hessian_estimate += hessian_sample
+                hessian_estimate += _
 
         return (
             value_estimate / num_samples,
@@ -156,8 +156,13 @@ class GradientDescent(SPSA):
         # 'x' is the array of Theta Points of VQE
         # 'eps' is the perturbation from self.calibrate()
         # 'num_samples' is the number of samples to take and average to get an average slope at the point
-        # value, gradient, hessian = self._point_estimate(loss, x, eps, num_samples)
-        value, gradient, hessian = self._point_estimate_using_known_gradient(loss, x, eps, num_samples, AI)
+        global USE_SPSA
+        USE_SPSA = True
+        if USE_SPSA:
+            value, gradient, hessian = self._point_estimate(loss, x, eps, num_samples)
+            USE_SPSA = False
+        else:
+            value, gradient, hessian = self._point_estimate_using_known_gradient(loss, x, eps, num_samples, AI)
 # TODO END SECTION 1 ---------------------------------------------------------------------------------------------------
 
         # precondition gradient with inverse Hessian, if specified [ignore this isn't used in VQE]

@@ -1,10 +1,16 @@
 # developed in c2qa (ykent@iastate.edu).
 import json, numpy, pickle
-# from qiskit_aer.primitives import Estimator as Estimator_aer
+from qiskit_aer.primitives import Estimator as Estimator_aer
 from qiskit_ibm_runtime import Session, Estimator
 from qiskit.circuit import Parameter
 from qiskit.circuit.library import PauliEvolutionGate
 from qiskit.quantum_info import SparsePauliOp, Statevector
+from gradient_descent import NewGradientDescent
+
+
+NEW_OPTIMIZER = True
+
+
 
 
 class VQE:
@@ -12,7 +18,7 @@ class VQE:
         self._inp = get_inp()
         self.load_incar()
         self.set_hamilt()
-        self._nq = self._hop.num_qubits
+        self._nq = self._hamiltonian.num_qubits
         assert(self._inp["nq"] == self._nq)
         self.set_param_circ()
         mode_aml = self._inp.get("mode_aml", 0)
@@ -22,7 +28,7 @@ class VQE:
                     t=self._inp["tpar"],
                     nranges=self._inp.get("nranges", None),
                     mode=mode_aml)
-            # self.set_exact_points(err_exact=self._inp["err_exact"])
+            self.set_exact_points(err_exact=self._inp["err_exact"])
         else:
             self._aml = None
 
@@ -37,7 +43,7 @@ class VQE:
         self._incar["generators"] = self._incar["generators"]*nlayers
 
     def set_hamilt(self):
-        self._hop = SparsePauliOp.from_list(
+        self._hamiltonian = SparsePauliOp.from_list(
                 [(x.split('*')[1], float(x.split('*')[0]))
                 for x in self._incar["h"]])
 
@@ -92,53 +98,73 @@ class VQE:
             expval = state.expectation_value(h1op)
             assert(abs(w[0] - expval) < 1e-6)
             assert(abs(abs(v[:, 0].dot(state._data))-1) < 1e-6)
-        res = state.expectation_value(self._hop)
+        res = state.expectation_value(self._hamiltonian)
         print(f"initial state energy exact = {res.real:.6f}")
 
     def set_exact_gs(self):
-        hmat = self._hop.to_matrix()
+        hmat = self._hamiltonian.to_matrix()
         w, v = numpy.linalg.eigh(hmat)
         print(f"exact gs energy: {w[0].real:.6f}")
         self._gs = [w[0], v[:, 0]]
 
-    # def get_energy_sv(self, xlist):
-    #     estimator = Estimator_aer(
-    #             backend_options={
-    #                     "method": "statevector",
-    #                     },
-    #             run_options={"shots": None},
-    #             approximation=True,
-    # 	        )
-    #     job = estimator.run([self._param_circ],
-    #             [self._hop],
-    #             xlist,
-    #             )
-    #     return job.result().values[0]
+    def get_energy_sv(self, xlist):
+        estimator = Estimator_aer(
+                backend_options={
+                        "method": "statevector",
+                        },
+                run_options={"shots": None},
+                approximation=True,
+    	        )
+        job = estimator.run([self._param_circ],
+                [self._hop],
+                xlist,
+                )
+        return job.result().values[0]
 
     def get_energy(self, xlist):
         if self._inp["estimator"] is not None:
             job = self._inp["estimator"].run([self._param_circ],
-                    [self._hop],
-                    xlist,
-                    )
+                                             [self._hamiltonian],
+                                             xlist,
+                                             )
             res = job.result().values[0]
         else:
-            keep_try = True
-            while keep_try:
-                try:
-                    with Session(service=self._inp["service"], backend=self._inp["backend"]) as session:
-                        estimator = Estimator(session=session, options=self._inp["options"])
-                        job = estimator.run([self._param_circ],
-                                [self._hop],
-                                xlist,
-                                )
-                        session.close()
-                    res = job.result().values[0]
-                    keep_try = False
-                except:
-                    pass
+            raise ValueError("estimator is not set")
 
         return res
+
+
+
+    def get_energy_gradient(self, xlist, EPS=0.01):
+        # Find energy using the estimator
+        job = self._inp["estimator"].run([self._param_circ],
+                                         [self._hamiltonian],
+                                         xlist,
+                                         )
+        ENERGY = job.result().values[0]
+
+        dENERGY = []
+        for i in range(len(xlist)):
+            new_xlist = xlist.copy()
+            new_xlist[i] += EPS
+            job = self._inp["estimator"].run([self._param_circ],
+                                             [self._hamiltonian],
+                                             new_xlist,
+                                             )
+            dENERGY.append(ENERGY - job.result().values[0])
+
+        dENERGY = numpy.array(dENERGY)
+
+        return dENERGY/EPS
+
+
+
+
+
+
+
+
+
 
     def _fun_evaluate_energy(self):
         eval_count = 0
@@ -150,6 +176,13 @@ class VQE:
             return res
 
         return evaluate_energy
+
+    def _fun_evaluate_energy_gradient(self):
+        def evaluate_energy_gradient(xlist):
+            res = self.get_energy_gradient(xlist)
+            return res
+
+        return evaluate_energy_gradient
 
     def _fun_evaluate_energy_al(self):
         '''active-learning method.
@@ -181,20 +214,67 @@ class VQE:
         return evaluate_energy
 
     def minimize_energy(self):
-        if self._aml is None:
+
+        # If active learning is not used, use the normal optimizer
+        if self._aml is None and not NEW_OPTIMIZER:
             cost_fun = self._fun_evaluate_energy()
+            OPTIMIZER = self._inp["optimizer"]
+            res = OPTIMIZER.minimize(cost_fun,
+                                     self._inp["x0_list"],
+                                     bounds=self._inp["bounds"],
+                                     )
+            self._res_opt = res
+            e = self.get_energy(res.x)
+            print(f"minimal energy finally measured: {e:.6f}")
+            print(f"records: {self._records}")
+            if "is_prediction" in self._records:
+                print(f"non-prediction times: {self._records['is_prediction'].count(0)}")
+
+        # If active learning is not used, use the new optimizer
+        elif self._aml is None and NEW_OPTIMIZER:
+            cost_fun = self._fun_evaluate_energy()
+            grad_cost_fun = self._fun_evaluate_energy_gradient()
+
+            OPTIMIZER = NewGradientDescent(
+                maxiter=100,
+            )
+            res = OPTIMIZER.minimize(
+                self._inp["x0_list"],
+                cost_fun,
+                grad_cost_fun,
+                bounds=self._inp["bounds"],
+                upper_epsilon = 0.1,
+                lower_epsilon = 0.00001,
+                is_log=True
+            )
+            self._res_opt = res
+            final_energy = self.get_energy(res.x)
+            print(f"minimal energy finally measured: {final_energy:.6f}")
+            print(f"records: {self._records}")
+            if "is_prediction" in self._records:
+                print(f"non-prediction times: {self._records['is_prediction'].count(0)}")
+
+
+        # If active learning is used, use the active learning optimizer
         else:
             cost_fun = self._fun_evaluate_energy_al()
-        res = self._inp["optimizer"].minimize(cost_fun,
-                self._inp["x0_list"],
-                bounds=self._inp["bounds"],
-                )
-        self._res_opt = res
-        e = self.get_energy(res.x)
-        print(f"minimal energy finally measured: {e:.6f}")
-        print(f"records: {self._records}")
-        if "is_prediction" in self._records:
-            print(f"non-prediction times: {self._records['is_prediction'].count(0)}")
+            OPTIMIZER = self._inp["optimizer"]
+            res = OPTIMIZER.minimize(cost_fun,
+                                     self._inp["x0_list"],
+                                     bounds=self._inp["bounds"],
+                                     )
+            self._res_opt = res
+            e = self.get_energy(res.x)
+            print(f"minimal energy finally measured: {e:.6f}")
+            print(f"records: {self._records}")
+            if "is_prediction" in self._records:
+                print(f"non-prediction times: {self._records['is_prediction'].count(0)}")
+
+
+
+
+
+
 
     def estimate_t(self, nsample=100):
         x_list = numpy.random.rand(nsample, len(self._inp["x0_list"]))
@@ -206,14 +286,14 @@ class VQE:
         t_est, t_std = numpy.mean(e_list), numpy.std(e_list)
         print(f"estimated t: {t_est:.2e} with std: {t_std:.2e}")
 
-    # def set_exact_points(self, err_exact=1e-8):
-    #     xlists = []
-    #     ylist = []
-    #     for xlist in self._inp["xlists_exact"]:
-    #         e = self.get_energy_sv(xlist)
-    #         xlists.append(xlist)
-    #         ylist.append(e.real)
-    #     self._aml.add_training_data(xlists, ylist, err=err_exact)
+    def set_exact_points(self, err_exact=1e-8):
+        xlists = []
+        ylist = []
+        for xlist in self._inp["xlists_exact"]:
+            e = self.get_energy_sv(xlist)
+            xlists.append(xlist)
+            ylist.append(e.real)
+        self._aml.add_training_data(xlists, ylist, err=err_exact)
 
 
 

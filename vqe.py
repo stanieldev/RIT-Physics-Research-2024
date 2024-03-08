@@ -1,6 +1,6 @@
 # developed in c2qa (ykent@iastate.edu).
 import json, numpy, pickle
-from qiskit_aer.primitives import Estimator as Estimator_aer
+# from qiskit_aer.primitives import Estimator as Estimator_aer
 from qiskit_ibm_runtime import Session, Estimator
 from qiskit.circuit import Parameter
 from qiskit.circuit.library import PauliEvolutionGate
@@ -22,7 +22,7 @@ class VQE:
                     t=self._inp["tpar"],
                     nranges=self._inp.get("nranges", None),
                     mode=mode_aml)
-            self.set_exact_points(err_exact=self._inp["err_exact"])
+            # self.set_exact_points(err_exact=self._inp["err_exact"])
         else:
             self._aml = None
 
@@ -101,19 +101,19 @@ class VQE:
         print(f"exact gs energy: {w[0].real:.6f}")
         self._gs = [w[0], v[:, 0]]
 
-    def get_energy_sv(self, xlist):
-        estimator = Estimator_aer(
-                backend_options={
-                        "method": "statevector",
-                        },
-                run_options={"shots": None},
-                approximation=True,
-    	        )
-        job = estimator.run([self._param_circ],
-                [self._hop],
-                xlist,
-                )
-        return job.result().values[0]
+    # def get_energy_sv(self, xlist):
+    #     estimator = Estimator_aer(
+    #             backend_options={
+    #                     "method": "statevector",
+    #                     },
+    #             run_options={"shots": None},
+    #             approximation=True,
+    # 	        )
+    #     job = estimator.run([self._param_circ],
+    #             [self._hop],
+    #             xlist,
+    #             )
+    #     return job.result().values[0]
 
     def get_energy(self, xlist):
         if self._inp["estimator"] is not None:
@@ -206,14 +206,14 @@ class VQE:
         t_est, t_std = numpy.mean(e_list), numpy.std(e_list)
         print(f"estimated t: {t_est:.2e} with std: {t_std:.2e}")
 
-    def set_exact_points(self, err_exact=1e-8):
-        xlists = []
-        ylist = []
-        for xlist in self._inp["xlists_exact"]:
-            e = self.get_energy_sv(xlist)
-            xlists.append(xlist)
-            ylist.append(e.real)
-        self._aml.add_training_data(xlists, ylist, err=err_exact)
+    # def set_exact_points(self, err_exact=1e-8):
+    #     xlists = []
+    #     ylist = []
+    #     for xlist in self._inp["xlists_exact"]:
+    #         e = self.get_energy_sv(xlist)
+    #         xlists.append(xlist)
+    #         ylist.append(e.real)
+    #     self._aml.add_training_data(xlists, ylist, err=err_exact)
 
 
 

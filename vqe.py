@@ -165,6 +165,31 @@ class VariationalQuantumEigensolver:
 
         return res
 
+    def get_energy_gradient(self, xlist):
+        if self._inp["estimator"] is not None:
+            job = self._inp["estimator"].run([self._param_circ],
+                                             [self._hamiltonian],
+                                             xlist,
+                                             )
+            res = job.result().values[0]
+        else:
+            keep_try = True
+            while keep_try:
+                try:
+                    with Session(service=self._inp["service"], backend=self._inp["backend"]) as session:
+                        estimator = Estimator(session=session, options=self._inp["options"])
+                        job = estimator.run([self._param_circ],
+                                            [self._hamiltonian],
+                                            xlist,
+                                            )
+                        session.close()
+                    res = job.result().values[0]
+                    keep_try = False
+                except:
+                    pass
+
+        return res
+
     def _fun_evaluate_energy(self):
         eval_count = 0
 
@@ -176,6 +201,14 @@ class VariationalQuantumEigensolver:
             return res
 
         return evaluate_energy
+
+    def _fun_gradient_evaluate_energy(self):
+        def evaluate_energy(xlist):
+            res = self.get_energy_gradient(xlist)
+            return res
+
+        return evaluate_energy
+
 
 
     # param_circ comes from a list of parameters from INCAR generators.
@@ -215,13 +248,16 @@ class VariationalQuantumEigensolver:
         IS_AI = False
         if self._aml is None:
             cost_fun = self._fun_evaluate_energy()
+            fun_gradient = self._fun_gradient_evaluate_energy()
         else:
             cost_fun = self._fun_evaluate_energy_al()
+            fun_gradient = None
             IS_AI = True
         res = self._inp["optimizer"].minimize(cost_fun,
                                               self._inp["x0_list"],
                                               bounds=self._inp["bounds"],
-                                              AI=IS_AI
+                                              AI=IS_AI,
+                                              fun_gradient=fun_gradient
                                               )
         self._res_opt = res
         e = self.get_energy(res.x)

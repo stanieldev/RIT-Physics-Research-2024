@@ -28,7 +28,6 @@ logger = logging.getLogger(__name__)
 class GradientDescent(SPSA):
 
 
-
     # This is the implementation in SPSAs
     def _point_sample(self, loss, x, eps, delta1, delta2):
         """A single sample of the gradient at position ``x`` in direction ``delta``."""
@@ -56,6 +55,23 @@ class GradientDescent(SPSA):
             hessian_sample = diff * (rank_one + rank_one.T) / 2
 
         return np.mean(values), gradient_sample, hessian_sample
+
+
+    def _gradient_point_sample(self, cost_fun, cost_fun_gradient, x):
+        """A single sample of the gradient at position ``x`` in direction ``delta``."""
+        # points to evaluate
+        self._nfev += 2
+
+        # batch evaluate the points (if possible)
+        values = _batch_evaluate(cost_fun, [x], self._max_evals_grouped)
+
+        plus = values[0]
+        minus = values[1]
+        gradient_sample = (plus - minus) / (2 * eps) * delta1
+
+        return np.mean(values), gradient_sample, None
+
+
 
     # This is the implementation in SPSA
     # This gives us an approximation of the point
@@ -105,29 +121,44 @@ class GradientDescent(SPSA):
 
 
 
-    def _point_estimate_using_known_gradient(self, cost_fun, x, eps, num_samples, AI):
+    def _point_estimate_using_known_gradient(self, cost_fun, x, cost_fun_gradient, num_samples, AI):
 
-        # If AI, use point estimate, otherwise use the new algorithm
-        if AI:
-            print("AI")
-            return self._point_estimate(cost_fun, x, eps, num_samples)
-        if not AI:
-            print("Not AI")
-            return self._point_estimate(cost_fun, x, eps, num_samples)
+        # # If AI, use point estimate, otherwise use the new algorithm
+        # if AI:
+        #     print("AI")
+        #     return self._point_estimate(cost_fun, x, eps, num_samples)
+        # if not AI:
+        #     print("Not AI")
+        #     return self._point_estimate(cost_fun, x, eps, num_samples)
+
+        """The gradient estimate at point x."""
+        # set up variables to store averages
+        value_estimate = 0
+        gradient_estimate = np.zeros(x.size)
+        hessian_estimate = np.zeros((x.size, x.size))
 
 
-        # # Initialize the variables to store the averages
-        # value_estimate = 0
-        # gradient_estimate = np.zeros(x.size)
-        #
-        # # Hessian is not used in VQE
-        # hessian_estimate = None
-        #
-        # return (
-        #     value_estimate,
-        #     gradient_estimate,
-        #     hessian_estimate,
-        # )
+
+
+        # iterate over the directions
+        deltas1 = [
+            bernoulli_perturbation(x.size, self.perturbation_dims) for _ in range(num_samples)
+        ]
+
+        for i in range(num_samples):
+            delta1 = deltas1[i]
+
+            value_sample, gradient_sample, _ = self._gradient_point_sample(
+                cost_fun, cost_fun_gradient, x
+            )
+            value_estimate += value_sample
+            gradient_estimate += gradient_sample
+
+        return (
+            value_estimate / num_samples,
+            gradient_estimate / num_samples,
+            hessian_estimate / num_samples,
+        )
 
 
 
@@ -141,7 +172,7 @@ class GradientDescent(SPSA):
     lse_solver:  np.linalg.solve (Linear Equation Solver)
     '''
 
-    def _new_compute_update(self, loss, x, k, eps, lse_solver, AI):
+    def _new_compute_update(self, loss, x, k, loss_gradient, lse_solver, AI):
 
         # compute the perturbations [ignore this doesn't change]
         if isinstance(self.resamplings, dict):
@@ -162,7 +193,7 @@ class GradientDescent(SPSA):
             value, gradient, hessian = self._point_estimate(loss, x, eps, num_samples)
             USE_SPSA = False
         else:
-            value, gradient, hessian = self._point_estimate_using_known_gradient(loss, x, eps, num_samples, AI)
+            value, gradient, hessian = self._point_estimate_using_known_gradient(loss, x, loss_gradient, num_samples, AI)
 # TODO END SECTION 1 ---------------------------------------------------------------------------------------------------
 
         # precondition gradient with inverse Hessian, if specified [ignore this isn't used in VQE]
@@ -191,7 +222,8 @@ class GradientDescent(SPSA):
             x0: POINT,
             jac: Callable[[POINT], POINT] | None = None,
             bounds: list[tuple[float, float]] | None = None,
-            AI: bool | None = None
+            AI: bool | None = None,
+            fun_gradient: Callable[[POINT], POINT] | None = None
     ) -> OptimizerResult:
         # ensure learning rate and perturbation are correctly set: either none or both
         # this happens only here because for the calibration the loss function is required
@@ -244,7 +276,7 @@ class GradientDescent(SPSA):
             # compute update
             # FX estimate is an estimate at the point
             # update is the gradient at the point
-            fx_estimate, update = self._new_compute_update(fun, x, k, next(eps), lse_solver, AI)
+            fx_estimate, update = self._new_compute_update(fun, x, k, fun_gradient, lse_solver, AI)
 # TODO: Checkpoint 1 ---------------------------------------------------------------------------------------------------
             # trust region
             if self.trust_region:

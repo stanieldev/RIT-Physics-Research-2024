@@ -17,13 +17,13 @@ class AML:
 
     def set_kernel(self, mode):
         if mode == 1:
-            from kernels import agnostic_kernel_46
+            from kernels import EQUATION_21
             def kernel(theta_ai, theta_bi):
-                return agnostic_kernel_46(theta_ai, theta_bi, self._t)
+                return EQUATION_21(theta_ai, theta_bi, self._t)
         elif mode == 2:
-            from kernels import agnostic_kernel_n1n2
+            from kernels import EQUATION_11_12
             def kernel(theta_ai, theta_bi):
-                return agnostic_kernel_n1n2(
+                return EQUATION_11_12(
                         theta_ai, theta_bi,
                         self._nranges[0], self._nranges[1],
                         self._t

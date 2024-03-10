@@ -3,7 +3,7 @@ import itertools, numpy
 
 
 # Agnostic kernel Eq.(21)
-def agnostic_kernel_46(theta_ai, theta_bi, const=1./117):
+def EQUATION_21(theta_ai, theta_bi, const=1. / 117):
     h_ki = [[h1, h2]
             for h1, h2 in itertools.product(range(-4, 5), range(-6, 7))]
     assert(len(theta_ai[0]) == len(theta_bi[0]) == 2)
@@ -17,7 +17,7 @@ def agnostic_kernel_46(theta_ai, theta_bi, const=1./117):
     return res.real
 
 
-def agnostic_kernel_n1n2(theta_ai, theta_bi, n1, n2, const):
+def EQUATION_11_12(theta_ai, theta_bi, n1, n2, const):
     h_ki = [[h1, h2]
             for h1, h2 in itertools.product(range(-n1, n1+1), range(-n2, n2+1))]
     assert(len(theta_ai[0]) == len(theta_bi[0]) == 2)
@@ -45,7 +45,7 @@ def stochastic_kernel_direct(theta_ai, theta_bi, nlist, const=1):
 
 
 if __name__ == "__main__":
-    print(agnostic_kernel_46([[0, 0]], [[0, 0]]))
-    print(agnostic_kernel_n1n2([[0, 0]], [[0, 0]], 9, 12, 1.0))
-    print(agnostic_kernel_n1n2([[0, 0]], [[0, 0]], 2, 2, 1.0))
+    print(EQUATION_21([[0, 0]], [[0, 0]]))
+    print(EQUATION_11_12([[0, 0]], [[0, 0]], 9, 12, 1.0))
+    print(EQUATION_11_12([[0, 0]], [[0, 0]], 2, 2, 1.0))
     print(stochastic_kernel_direct([[0, 0]], [[0, 0]], [9, 12], 1.0))

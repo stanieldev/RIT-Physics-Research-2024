@@ -4,7 +4,6 @@ from qiskit_aer.noise import NoiseModel
 from qiskit_ibm_provider import IBMProvider
 import numpy, os, pickle
 
-from gradient_descent import GradientDescent
 from qiskit_algorithms.optimizers import GradientDescent as GDQiskit
 
 device = "ibmq_mumbai"
@@ -50,16 +49,14 @@ estimator = Estimator(
     approximation=False,
 )
 ### optimizer
-optimizer = GradientDescent(maxiter=100,
-                 blocking=True,
-                 learning_rate=0.005,
-                 perturbation=0.005,
-                 allowed_increase=0.5
-                 )
-# optimizer = GDQiskit(maxiter=100,
-#                     learning_rate=0.005,
-#                     perturbation=0.005,
-#                     )
+optimizer = GDQiskit(maxiter=100,
+                    learning_rate=0.005,
+                    perturbation=0.005,
+                    )
+
+# xlists_exact = [[0, x] for x in numpy.linspace(-numpy.pi/2, numpy.pi/2, 13, endpoint=False)]
+xlists_exact = []
+
 
 inp = {
     "hpath": "../../../",
@@ -69,10 +66,11 @@ inp = {
     "bounds": [(-numpy.pi, numpy.pi)] * nparams,
     "estimator": estimator,
     "optimizer": optimizer,
-    "mode_aml": 0,
+    "mode_aml": 1,
     "err_exact": 1e-6,
     "err": 0.001,
     "tol_prediction": 0.001,
     "mode_init_check": 0,
     "tpar": 2,
+    "xlists_exact": xlists_exact,
 }

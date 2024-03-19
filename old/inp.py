@@ -6,7 +6,7 @@ import numpy, os, pickle
 
 from qiskit_algorithms.optimizers import GradientDescent as GDQiskit
 
-device = "ibmq_mumbai"
+device = "old/ibmq_mumbai"
 nq = 8
 nparams = 2
 ### initial state preparation: product of bell pairs.
@@ -66,7 +66,7 @@ inp = {
     "bounds": [(-numpy.pi, numpy.pi)] * nparams,
     "estimator": estimator,
     "optimizer": optimizer,
-    "mode_aml": 1,
+    "mode_aml": 0,
     "err_exact": 1e-6,
     "err": 0.001,
     "tol_prediction": 0.001,

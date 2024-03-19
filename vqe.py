@@ -158,6 +158,7 @@ class VQE:
         if "evals" not in self._records:
             self._records["evals"] = []
             self._records["is_prediction"] = []
+        print("_fun_evaluate_energy_al() called")
 
         def evaluate_energy(xlist):
             nonlocal eval_count

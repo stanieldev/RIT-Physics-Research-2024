@@ -10,7 +10,7 @@ Purpose : This file is used to save the IBM API Key to the local system.
 # Universal import for IBM API Key
 from qiskit_ibm_provider import IBMProvider
 
-# If reading from an environment variable:
+# If reading from an environment variable
 import os
 IBM_API_KEY = os.environ.get("IBM_API_KEY")
 

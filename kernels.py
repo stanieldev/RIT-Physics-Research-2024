@@ -1,5 +1,5 @@
-import itertools, numpy
-
+import itertools
+import numpy
 
 
 # Agnostic kernel Eq.(21)
@@ -10,8 +10,7 @@ def agnostic_kernel_46(theta_ai, theta_bi, const=1./117):
     theta_abi = numpy.asarray([[numpy.asarray(vi1) - numpy.asarray(vi2)
             for vi2 in theta_bi]
             for vi1 in theta_ai])
-    thetah_abk = numpy.einsum("abi,ki->abk", theta_abi, h_ki,
-            optimize=True)*2j
+    thetah_abk = numpy.einsum("abi,ki->abk", theta_abi, h_ki, optimize=True)*2j
     res = numpy.exp(thetah_abk).sum(axis=2)*const
     assert(numpy.all(abs(res.imag) < 1e-12))
     return res.real
@@ -24,8 +23,7 @@ def agnostic_kernel_n1n2(theta_ai, theta_bi, n1, n2, const):
     theta_abi = numpy.asarray([[numpy.asarray(vi1) - numpy.asarray(vi2)
             for vi2 in theta_bi]
             for vi1 in theta_ai])
-    thetah_abk = numpy.einsum("abi,ki->abk", theta_abi, h_ki,
-            optimize=True)*1j
+    thetah_abk = numpy.einsum("abi,ki->abk", theta_abi, h_ki, optimize=True)*1j
     res = numpy.exp(thetah_abk).sum(axis=2)*const
     assert(numpy.all(abs(res.imag) < 1e-12))
     return res.real
@@ -44,6 +42,7 @@ def stochastic_kernel_direct(theta_ai, theta_bi, nlist, const=1):
     return kab
 
 
+# Test
 if __name__ == "__main__":
     print(agnostic_kernel_46([[0, 0]], [[0, 0]]))
     print(agnostic_kernel_n1n2([[0, 0]], [[0, 0]], 9, 12, 1.0))

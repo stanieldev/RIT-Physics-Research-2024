@@ -1,44 +1,49 @@
 # developed in c2qa (ykent@iastate.edu).
 import numpy
+from kernels import *
+
+
+# Kernal Enumeration
+AGNOSTIC_KERNAL_46 = 1
+AGNOSTIC_KERNAL_N1N2 = 2
+STOCHASTIC_KERNAL_DIRECT = 3
 
 
 class AML:
-    def __init__(self, t=2, mode=1, nranges=None):
-        self._t = t
-        self._nranges = nranges
-        self._mode = mode
-        self.set_kernel(mode)
-        self.init_lists()
+    '''Agnostic Machine Learning (AML) model.'''
+    def __init__(self, t=2, mode=1, n_ranges=None):
 
-    def init_lists(self):
+        # Initialize the AML model.
+        self._t_parameter = t
+        self._mode = mode
+        self._n_ranges = n_ranges
+
+        # Select the kernel function.
+        self.kernel = self._select_kernel(mode)
+
+        # Initialize the training data lists.
         self._theta_ai = []
         self._energy_a = []
         self._err_a = []
 
-    def set_kernel(self, mode):
-        if mode == 1:
-            from kernels import agnostic_kernel_46
+    # Set the kernel function.
+    def _select_kernel(self, mode):
+        if mode == AGNOSTIC_KERNAL_46:
             def kernel(theta_ai, theta_bi):
-                return agnostic_kernel_46(theta_ai, theta_bi, self._t)
-        elif mode == 2:
-            from kernels import agnostic_kernel_n1n2
+                return agnostic_kernel_46(theta_ai, theta_bi, self._t_parameter)
+            return kernel
+        elif mode == AGNOSTIC_KERNAL_N1N2:
             def kernel(theta_ai, theta_bi):
-                return agnostic_kernel_n1n2(
-                        theta_ai, theta_bi,
-                        self._nranges[0], self._nranges[1],
-                        self._t
-                        )
-        elif mode == 3:
-            from kernels import stochastic_kernel_direct
+                return agnostic_kernel_n1n2(theta_ai, theta_bi, self._n_ranges[0], self._n_ranges[1], self._t_parameter)
+            return kernel
+        elif mode == STOCHASTIC_KERNAL_DIRECT:
             def kernel(theta_ai, theta_bi):
-                return stochastic_kernel_direct(
-                        theta_ai, theta_bi,
-                        self._nranges,
-                        )
+                return stochastic_kernel_direct(theta_ai, theta_bi, self._n_ranges)
+            return kernel
         else:
-            raise ValueError(f"mode = {mode} not implemented.")
-        self.kernel = kernel
+            raise ValueError("Unknown Mode")
 
+    # Add training data function.
     def add_training_data(self, theta_ai, energy_a, err=1e-6):
         '''initialize with known accurate points.
         '''
@@ -58,8 +63,9 @@ class AML:
         ### sanity check
         for theta_i, energy in zip(theta_ai, energy_a):
             ene_est, err_est = self.prediction(theta_i)
-            print(f"prediction: {ene_est:.2e}, error: {ene_est-energy:.2e}, err_est: {err_est:.2e}")
+            print(f"[AML] Prediction: {ene_est:.2e}, error: {ene_est-energy:.2e}, err_est: {err_est:.2e}")
 
+    # Make an educated prediction function.
     def prediction(self, theta_i):
         if len(self._theta_ai) == 0:
             ene_est = 1e2
@@ -70,12 +76,12 @@ class AML:
             k_a1 = self.kernel(self._theta_ai, [theta_i])[:, 0]
             ene_est = numpy.einsum("a,ab,b", k_1a, self._kbinv_ab, self._energy_a,
                     optimize=True)
-            var = k_11 - numpy.einsum("a,ab,b", k_1a, self._kbinv_ab, k_a1,
-                    optimize=True)
+            var = abs(k_11 - numpy.einsum("a,ab,b", k_1a, self._kbinv_ab, k_a1,
+                    optimize=True))
             err_est = numpy.sqrt(var)
         return ene_est, err_est
 
 
-
+# Main guard
 if __name__ == "__main__":
     aml = AML()

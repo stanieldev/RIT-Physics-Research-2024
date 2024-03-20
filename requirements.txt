@@ -7,7 +7,7 @@ qiskit-aer==0.12.2
 qiskit-algorithms==0.2.1
 qiskit-aqua==0.9.5
 qiskit-ibm-provider==0.7.0
-qiskit-ibm-runtime==0.12.2
+qiskit-ibm-runtime==0.21.2
 qiskit-ibmq-provider==0.18.1
 qiskit-ignis==0.6.0
 qiskit-nature==0.6.2

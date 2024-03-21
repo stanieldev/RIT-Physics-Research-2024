@@ -290,11 +290,14 @@ class VQE:
             eval_count += 1
 
             e_est, err_est = self._AML.prediction(xlist)
+            e_grad = self._AML.predict_gradient(xlist)
+
             print(f"[VQE] Prediction {eval_count}: {e_est:.6f}, err_est:{err_est:.1e} at xs: {numpy.round(xlist, decimals=4)}")
             if err_est > self._tol_prediction:
                 e_calc = self.get_energy(xlist)
                 self._AML.add_training_data([xlist], [e_calc], err=self._err)
                 e_est2, err_est2 = self._AML.prediction(xlist)
+                e_grad_2 = self._AML.predict_gradient(xlist)
                 print(f"[VQE] e_est: {e_est:.6f} +/- {err_est:.2e}, e_calc: {e_calc:.6f}," +
                       f" e_est2: {e_est2:.6f} +/- {err_est2:.2e} at x: {numpy.round(xlist, decimals=3)}")
                 # use new prediction

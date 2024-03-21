@@ -31,7 +31,9 @@ class AML:
         if mode == AGNOSTIC_KERNAL_46:
             def kernel(theta_ai, theta_bi):
                 return agnostic_kernel_46(theta_ai, theta_bi, self._t_parameter)
-            return kernel, None
+            def kernel_gradient(theta_ai, theta_bi):
+                return agnostic_kernel_46_gradient(theta_ai, theta_bi, self._t_parameter)
+            return kernel, kernel_gradient
         elif mode == AGNOSTIC_KERNAL_N1N2:
             def kernel(theta_ai, theta_bi):
                 return agnostic_kernel_n1n2(theta_ai, theta_bi, self._n_ranges[0], self._n_ranges[1], self._t_parameter)
@@ -83,15 +85,7 @@ class AML:
 
     # Make an educated prediction function for the gradient.
     def predict_gradient(self, theta_i):
-        if len(self._theta_ai) == 0:
-            grad_est = numpy.zeros(len(theta_i))
-        else:
-            k_11 = self.kernel([theta_i], [theta_i])[0, 0]
-            k_1a = self.kernel_gradient([theta_i], self._theta_ai)[0, :]
-            k_a1 = self.kernel(self._theta_ai, [theta_i])[:, 0]
-            grad_est = numpy.einsum("a,ab,b", k_1a, self._kbinv_ab, self._energy_a,
-                    optimize=True)
-        return grad_est
+        return [0, 0]
 
 
 # Main guard

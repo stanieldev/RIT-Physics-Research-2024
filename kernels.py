@@ -4,16 +4,59 @@ import numpy
 
 # Agnostic kernel Eq.(21)
 def agnostic_kernel_46(theta_ai, theta_bi, const=1./117):
-    h_ki = [[h1, h2]
-            for h1, h2 in itertools.product(range(-4, 5), range(-6, 7))]
+
+    # The vector k sums are made in this list
+    vector_k_sum_indices = [[h1, h2] for h1, h2 in itertools.product(range(-4, 5), range(-6, 7))]
     assert(len(theta_ai[0]) == len(theta_bi[0]) == 2)
-    theta_abi = numpy.asarray([[numpy.asarray(vi1) - numpy.asarray(vi2)
-            for vi2 in theta_bi]
-            for vi1 in theta_ai])
-    thetah_abk = numpy.einsum("abi,ki->abk", theta_abi, h_ki, optimize=True)*2j
+
+    # Calculate the difference between the theta vectors
+    theta_abi = numpy.asarray([[numpy.asarray(vi1) - numpy.asarray(vi2) for vi2 in theta_bi] for vi1 in theta_ai])
+
+    # Calculate the exponent and sum over the k indices
+    thetah_abk = numpy.einsum("abi,ki->abk", theta_abi, vector_k_sum_indices, optimize=True)*2j
+
+    # Sum all the exponentials and multiply by the constant
     res = numpy.exp(thetah_abk).sum(axis=2)*const
     assert(numpy.all(abs(res.imag) < 1e-12))
+
+    # Return the real part of the result
     return res.real
+
+
+def agnostic_kernel_46_gradient(theta_ai, theta_bi, const=1./117):
+
+    # The vector k sums are made in this list
+    vector_k_sum_indices = [[h1, h2] for h1, h2 in itertools.product(range(-4, 5), range(-6, 7))]
+    assert (len(theta_ai[0]) == len(theta_bi[0]) == 2)
+
+    # Calculate the difference between the theta vectors
+    theta_abi = numpy.asarray([[numpy.asarray(vi1) - numpy.asarray(vi2) for vi2 in theta_bi] for vi1 in theta_ai])
+
+    # Block 1 for Gradient 1
+    res_1 = 0
+    for i in range(len(theta_ai)):
+        for j in range(len(theta_bi)):
+            for k in range(len(vector_k_sum_indices)):
+                factor = vector_k_sum_indices[k][0]
+                res_1 += factor * numpy.exp(
+                    2j * numpy.dot(numpy.array(theta_ai[i]) - numpy.array(theta_bi[j]), vector_k_sum_indices[k]))
+    res_1 *= const
+    assert (numpy.all(abs(res_1.imag) < 1e-12))
+
+    # Block 2 for Gradient 2
+    res_2 = 0
+    for i in range(len(theta_ai)):
+        for j in range(len(theta_bi)):
+            for k in range(len(vector_k_sum_indices)):
+                factor = vector_k_sum_indices[k][1]
+                res_2 += factor * numpy.exp(
+                    2j * numpy.dot(numpy.array(theta_ai[i]) - numpy.array(theta_bi[j]), vector_k_sum_indices[k]))
+    res_2 *= const
+    assert (numpy.all(abs(res_2.imag) < 1e-12))
+
+    # Return gradient
+    return [res_1.real, res_2.real]
+
 
 
 def agnostic_kernel_n1n2(theta_ai, theta_bi, n1, n2, const):

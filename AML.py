@@ -19,7 +19,7 @@ class AML:
         self._n_ranges = n_ranges
 
         # Select the kernel function.
-        self.kernel = self._select_kernel(mode)
+        self.kernel, self.kernel_gradient = self._select_kernel(mode)
 
         # Initialize the training data lists.
         self._theta_ai = []
@@ -31,15 +31,15 @@ class AML:
         if mode == AGNOSTIC_KERNAL_46:
             def kernel(theta_ai, theta_bi):
                 return agnostic_kernel_46(theta_ai, theta_bi, self._t_parameter)
-            return kernel
+            return kernel, None
         elif mode == AGNOSTIC_KERNAL_N1N2:
             def kernel(theta_ai, theta_bi):
                 return agnostic_kernel_n1n2(theta_ai, theta_bi, self._n_ranges[0], self._n_ranges[1], self._t_parameter)
-            return kernel
+            return kernel, None
         elif mode == STOCHASTIC_KERNAL_DIRECT:
             def kernel(theta_ai, theta_bi):
                 return stochastic_kernel_direct(theta_ai, theta_bi, self._n_ranges)
-            return kernel
+            return kernel, None
         else:
             raise ValueError("Unknown Mode")
 
@@ -80,6 +80,18 @@ class AML:
                     optimize=True))
             err_est = numpy.sqrt(var)
         return ene_est, err_est
+
+    # Make an educated prediction function for the gradient.
+    def predict_gradient(self, theta_i):
+        if len(self._theta_ai) == 0:
+            grad_est = numpy.zeros(len(theta_i))
+        else:
+            k_11 = self.kernel([theta_i], [theta_i])[0, 0]
+            k_1a = self.kernel_gradient([theta_i], self._theta_ai)[0, :]
+            k_a1 = self.kernel(self._theta_ai, [theta_i])[:, 0]
+            grad_est = numpy.einsum("a,ab,b", k_1a, self._kbinv_ab, self._energy_a,
+                    optimize=True)
+        return grad_est
 
 
 # Main guard

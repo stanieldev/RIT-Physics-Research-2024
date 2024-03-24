@@ -38,7 +38,7 @@ def agnostic_kernel_46_gradient(theta_ai, theta_bi, const=1./117):
         for j in range(len(theta_bi)):
             for k in range(len(vector_k_sum_indices)):
                 factor = vector_k_sum_indices[k][0]
-                res_1 += factor * numpy.exp(
+                res_1 += 2j * factor * numpy.exp(
                     2j * numpy.dot(numpy.array(theta_ai[i]) - numpy.array(theta_bi[j]), vector_k_sum_indices[k]))
     res_1 *= const
     assert (numpy.all(abs(res_1.imag) < 1e-12))
@@ -49,12 +49,18 @@ def agnostic_kernel_46_gradient(theta_ai, theta_bi, const=1./117):
         for j in range(len(theta_bi)):
             for k in range(len(vector_k_sum_indices)):
                 factor = vector_k_sum_indices[k][1]
-                res_2 += factor * numpy.exp(
+                res_2 += 2j * factor * numpy.exp(
                     2j * numpy.dot(numpy.array(theta_ai[i]) - numpy.array(theta_bi[j]), vector_k_sum_indices[k]))
     res_2 *= const
     assert (numpy.all(abs(res_2.imag) < 1e-12))
 
     # Return gradient
+    # TODO NORM BEING NOT A NUMBER STUFF
+    norm = numpy.sqrt(res_1.real**2 + res_2.real**2)
+    res_1 = res_1.real / norm
+    res_2 = res_2.real / norm
+
+    print(res_1.real, res_2.real)
     return [res_1.real, res_2.real]
 
 

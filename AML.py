@@ -85,6 +85,14 @@ class AML:
 
     # Make an educated prediction function for the gradient.
     def predict_gradient(self, theta_i):
+        if len(self._theta_ai) == 0:
+            ene_est = 1e2
+            err_est = 1e2
+        else:
+            k_11 = self.kernel([theta_i], [theta_i])[0, 0]
+            k_1a = self.kernel_gradient([theta_i], self._theta_ai)
+            k_a1 = self.kernel(self._theta_ai, [theta_i])[:, 0]
+
         return [0, 0]
 
 

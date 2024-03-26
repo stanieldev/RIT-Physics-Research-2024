@@ -2,6 +2,10 @@ import itertools
 import numpy
 
 
+# Control Panel
+KERNAL_DEBUG = False
+
+
 # Agnostic kernel Eq.(21)
 def agnostic_kernel_46(theta_ai, theta_bi, const=1./117):
 
@@ -23,14 +27,14 @@ def agnostic_kernel_46(theta_ai, theta_bi, const=1./117):
     return res.real
 
 
-def agnostic_kernel_46_gradient(theta_ai, theta_bi, const=1./117):
+def agnostic_kernel_46_gradient(theta_ai, theta_bi, const=None):
+
+    # Print that this function was called
+    if KERNAL_DEBUG:
+        print(f"[KERNAL] Called agnostic_kernel_46_gradient(\n\t{theta_ai=}, \n\t{theta_bi=}, \n\t{const=}\n)")
 
     # The vector k sums are made in this list
     vector_k_sum_indices = [[h1, h2] for h1, h2 in itertools.product(range(-4, 5), range(-6, 7))]
-    assert (len(theta_ai[0]) == len(theta_bi[0]) == 2)
-
-    # Calculate the difference between the theta vectors
-    theta_abi = numpy.asarray([[numpy.asarray(vi1) - numpy.asarray(vi2) for vi2 in theta_bi] for vi1 in theta_ai])
 
     # Block 1 for Gradient 1
     res_1 = 0
@@ -40,7 +44,6 @@ def agnostic_kernel_46_gradient(theta_ai, theta_bi, const=1./117):
                 factor = vector_k_sum_indices[k][0]
                 res_1 += 2j * factor * numpy.exp(
                     2j * numpy.dot(numpy.array(theta_ai[i]) - numpy.array(theta_bi[j]), vector_k_sum_indices[k]))
-    res_1 *= const
     assert (numpy.all(abs(res_1.imag) < 1e-12))
 
     # Block 2 for Gradient 2
@@ -51,18 +54,21 @@ def agnostic_kernel_46_gradient(theta_ai, theta_bi, const=1./117):
                 factor = vector_k_sum_indices[k][1]
                 res_2 += 2j * factor * numpy.exp(
                     2j * numpy.dot(numpy.array(theta_ai[i]) - numpy.array(theta_bi[j]), vector_k_sum_indices[k]))
-    res_2 *= const
     assert (numpy.all(abs(res_2.imag) < 1e-12))
 
     # Return gradient
-    # TODO NORM BEING NOT A NUMBER STUFF
-    norm = numpy.sqrt(res_1.real**2 + res_2.real**2)
-    res_1 = res_1.real / norm
-    res_2 = res_2.real / norm
-
-    print(res_1.real, res_2.real)
-    return [res_1.real, res_2.real]
-
+    norm = numpy.sqrt(res_1.real ** 2 + res_2.real ** 2)
+    if norm == 0:
+        theta = numpy.random.rand() * 2 * numpy.pi
+        gradient_vector = [numpy.sin(theta), numpy.cos(theta)]
+        if KERNAL_DEBUG:
+            print("[KERNAL] Warning: Gradient is zero, returning random vector")
+        return numpy.array(gradient_vector)
+    else:
+        gradient_vector = [res_1.real / norm, res_2.real / norm]
+        if KERNAL_DEBUG:
+            print(f"[KERNAL] Returning gradient: {gradient_vector}")
+        return numpy.array(gradient_vector)
 
 
 def agnostic_kernel_n1n2(theta_ai, theta_bi, n1, n2, const):

@@ -8,6 +8,10 @@ AGNOSTIC_KERNAL_46 = 1
 AGNOSTIC_KERNAL_N1N2 = 2
 STOCHASTIC_KERNAL_DIRECT = 3
 
+# Control Panel
+DEBUG = False
+
+
 
 class AML:
     '''Agnostic Machine Learning (AML) model.'''
@@ -31,6 +35,7 @@ class AML:
         if mode == AGNOSTIC_KERNAL_46:
             def kernel(theta_ai, theta_bi):
                 return agnostic_kernel_46(theta_ai, theta_bi, self._t_parameter)
+
             def kernel_gradient(theta_ai, theta_bi):
                 return agnostic_kernel_46_gradient(theta_ai, theta_bi, self._t_parameter)
             return kernel, kernel_gradient
@@ -65,7 +70,8 @@ class AML:
         ### sanity check
         for theta_i, energy in zip(theta_ai, energy_a):
             ene_est, err_est = self.prediction(theta_i)
-            print(f"[AML] Prediction: {ene_est:.2e}, error: {ene_est-energy:.2e}, err_est: {err_est:.2e}")
+            if DEBUG:
+                print(f"[AML] Added Training Data: {ene_est:.2e} ± {err_est:.2e} ({ene_est-energy:.2e})")
 
     # Make an educated prediction function.
     def prediction(self, theta_i):
@@ -85,15 +91,33 @@ class AML:
 
     # Make an educated prediction function for the gradient.
     def predict_gradient(self, theta_i):
-        if len(self._theta_ai) == 0:
-            ene_est = 1e2
-            err_est = 1e2
-        else:
-            k_11 = self.kernel([theta_i], [theta_i])[0, 0]
-            k_1a = self.kernel_gradient([theta_i], self._theta_ai)
-            k_a1 = self.kernel(self._theta_ai, [theta_i])[:, 0]
+        k_gradient = self.kernel_gradient([theta_i], self._theta_ai)
 
-        return [0, 0]
+        if len(self._theta_ai) == 0:
+            ene_est_1 = 1e2
+            ene_est_2 = 1e2
+        else:
+            k_1a_1 = [k_gradient[0]]
+            k_1a_2 = [k_gradient[1]]
+            ene_est_1 = numpy.einsum("a,ab,b", k_1a_1, self._kbinv_ab, self._energy_a,
+                    optimize=True)
+            ene_est_2 = numpy.einsum("a,ab,b", k_1a_2, self._kbinv_ab, self._energy_a,
+                    optimize=True)
+
+        # Return gradient
+        norm = numpy.sqrt(ene_est_1.real ** 2 + ene_est_2.real ** 2)
+        if norm == 0:
+            theta = numpy.random.rand() * 2 * numpy.pi
+            gradient_vector = [numpy.sin(theta)/1e6, numpy.cos(theta)/1e6]
+            if DEBUG:
+                print("[AML] Warning: Gradient is zero, returning random vector")
+            return numpy.array(gradient_vector)
+        else:
+            gradient_vector = [ene_est_1.real, ene_est_2.real]
+            if DEBUG:
+                print(f"[AML] Returning gradient: {gradient_vector}")
+            return numpy.array(gradient_vector)
+
 
 
 # Main guard

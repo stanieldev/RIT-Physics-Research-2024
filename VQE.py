@@ -1,6 +1,5 @@
 # developed in c2qa (ykent@iastate.edu).
 from __future__ import annotations
-
 import json
 import numpy
 import pickle
@@ -12,11 +11,11 @@ from qiskit.quantum_info import SparsePauliOp, Statevector
 from qiskit_algorithms.optimizers import GradientDescent as GDQiskit
 from qiskit.circuit import QuantumCircuit
 import os
-
 from AML import AML
 
-DEBUG = False
-
+# Control Panel
+DEBUG = True
+OLD_OPTIMIZER = False
 
 class VQECircuit:
     def __init__(self, circuit, parameters):
@@ -30,11 +29,17 @@ class Eigenstate:
         self.state = state
 
 
+class FakeResult:
+    def __init__(self, x):
+        self.x = x
+
+
 # Function to load the input file (inp.py)
 def _load_input_file(filename: str) -> dict:
 
     # Test input file
-    if DEBUG: print(f"_load_input_file({filename=}) was called.")
+    if DEBUG:
+        print(f"[VQE_INIT] Called _load_input_file({filename=})")
     assert filename.endswith(".py")
     assert os.path.isfile(filename)
 
@@ -62,7 +67,8 @@ def _load_input_file(filename: str) -> dict:
     assert "nlayers" in simulation_settings
 
     # Return the simulation settings
-    if DEBUG: print(f"_load_input_file({filename=}) finished executing.")
+    if DEBUG:
+        print(f"[VQE_INIT] Finish _load_input_file({filename=})")
     return simulation_settings
 
 
@@ -70,7 +76,8 @@ def _load_input_file(filename: str) -> dict:
 def _load_incar_file(filename: str) -> dict:
 
     # Test incar file
-    if DEBUG: print(f"_load_incar_file({filename=}) was called.")
+    if DEBUG:
+        print(f"[VQE_INIT] Called _load_incar_file({filename=})")
     assert os.path.isfile(filename)
 
     # Load the INCAR file (.py) and load it as a dictionary
@@ -82,7 +89,8 @@ def _load_incar_file(filename: str) -> dict:
     assert "generators" in incar_settings
 
     # Return the INCAR dictionary
-    if DEBUG: print(f"_load_incar_file({filename=}) finished executing.")
+    if DEBUG:
+        print(f"[VQE_INIT] Finish _load_incar_file({filename=})")
     return incar_settings
 
 
@@ -90,14 +98,16 @@ def _load_incar_file(filename: str) -> dict:
 def _generate_hamiltonian(hamiltonian: list) -> SparsePauliOp:
 
     # Check the input
-    if DEBUG: print(f"_generate_hamiltonian() was called.")
+    if DEBUG:
+        print(f"[VQE_INIT] Called _generate_hamiltonian(hamiltonian)")
     assert isinstance(hamiltonian, list)
 
     # Generate the hamiltonian
     hamiltonian = SparsePauliOp.from_list([(x.split('*')[1], float(x.split('*')[0])) for x in hamiltonian])
 
     # Return the hamiltonian
-    if DEBUG: print(f"_generate_hamiltonian() finished executing.")
+    if DEBUG:
+        print(f"[VQE_INIT] Finish _generate_hamiltonian(hamiltonian)")
     return hamiltonian
 
 
@@ -105,7 +115,8 @@ def _generate_hamiltonian(hamiltonian: list) -> SparsePauliOp:
 def _generate_circuit(initial_circuit: QuantumCircuit, generators: list, num_qubits: int) -> VQECircuit:
 
     # Check the input
-    if DEBUG: print(f"_generate_parameter_circuit() was called.")
+    if DEBUG:
+        print(f"[VQE_INIT] Called _generate_circuit()")
     assert isinstance(initial_circuit, QuantumCircuit)
     assert isinstance(generators, list)
     assert isinstance(num_qubits, int)
@@ -122,7 +133,8 @@ def _generate_circuit(initial_circuit: QuantumCircuit, generators: list, num_qub
             circuit.append(PauliEvolutionGate(op, time=parameter), range(num_qubits))
 
     # Return the parameters
-    if DEBUG: print(f"_generate_parameter_circuit() finished executing.")
+    if DEBUG:
+        print(f"[VQE_INIT] Finish _generate_circuit()")
     return VQECircuit(circuit, parameters)
 
 
@@ -149,7 +161,8 @@ def _generate_circuit_statevector(xlist: list, circuit: VQECircuit, num_qubits: 
 def find_exact_groundstate(hamiltonian: SparsePauliOp) -> Eigenstate:
 
     # Check the input
-    if DEBUG: print(f"find_exact_groundstate() was called.")
+    if DEBUG:
+        print(f"[VQE_INIT] Called find_exact_groundstate()")
     assert isinstance(hamiltonian, SparsePauliOp)
 
     # Find the exact ground state
@@ -157,7 +170,8 @@ def find_exact_groundstate(hamiltonian: SparsePauliOp) -> Eigenstate:
     eigenvalues, eigenvectors = numpy.linalg.eigh(hamiltonian_matrix)
 
     # Return the exact ground state
-    if DEBUG: print(f"find_exact_groundstate() finished executing.")
+    if DEBUG:
+        print(f"[VQE_INIT] Finish find_exact_groundstate()")
     return Eigenstate(eigenvalues[0], eigenvectors[:, 0])
 
 
@@ -165,6 +179,10 @@ class VQE:
 
     # Constructor
     def __init__(self, *, input_file: str, incar_file: str) -> None:
+
+        # Print a message
+        if DEBUG:
+            print(f"[VQE_INIT] Initializing VQE object...")
 
         # Load the input file
         settings = _load_input_file(input_file)
@@ -213,6 +231,10 @@ class VQE:
         # Initialize the records
         self._aml_records = {"evals": [], "is_prediction": []}
         self.optimal_result = None
+
+        # Print a final message
+        if DEBUG:
+            print(f"[VQE_INIT] VQE object has been initialized.\n")
 
     @property
     def x_list(self) -> numpy.ndarray:
@@ -277,7 +299,8 @@ class VQE:
             nonlocal eval_count
             eval_count += 1
             result = self.get_energy(xlist)
-            print(f"[VQE] Evaluation {eval_count}: {result:.6f} at x: {numpy.round(xlist, decimals=3)}")
+            if DEBUG:
+                print(f"[VQE] Evaluation {eval_count}: {result:.6f} at x: {numpy.round(xlist, decimals=3)}")
             return result
 
         return evaluate_energy
@@ -290,16 +313,16 @@ class VQE:
             eval_count += 1
 
             e_est, err_est = self._AML.prediction(xlist)
-            e_grad = self._AML.predict_gradient(xlist)
 
-            print(f"[VQE] Prediction {eval_count}: {e_est:.6f}, err_est:{err_est:.1e} at xs: {numpy.round(xlist, decimals=4)}")
+            if DEBUG:
+                print(f"[VQE] Prediction {eval_count}: {e_est:.6f} +/- {err_est:.1e} @ X: {numpy.round(xlist, decimals=4)}")
             if err_est > self._tol_prediction:
                 e_calc = self.get_energy(xlist)
                 self._AML.add_training_data([xlist], [e_calc], err=self._err)
                 e_est2, err_est2 = self._AML.prediction(xlist)
-                e_grad_2 = self._AML.predict_gradient(xlist)
-                print(f"[VQE] e_est: {e_est:.6f} +/- {err_est:.2e}, e_calc: {e_calc:.6f}," +
-                      f" e_est2: {e_est2:.6f} +/- {err_est2:.2e} at x: {numpy.round(xlist, decimals=3)}")
+                if DEBUG:
+                    print(f"[VQE]   Adjusted {eval_count}:  {e_est2:.6f} +/- {err_est2:.2e}, e_calc: {e_calc:.6f} @ X: {numpy.round(xlist, decimals=4)}")
+
                 # use new prediction
                 e_est = e_est2
                 self._aml_records["is_prediction"].append(0)
@@ -310,7 +333,38 @@ class VQE:
             # setting this to float(x) works for some reason
             return float(e_est)
 
+        return evaluate_energy
 
+    def _energy_function_artificial_with_gradient(self):
+        eval_count = 0
+
+        def evaluate_energy(xlist):
+            nonlocal eval_count
+            eval_count += 1
+
+            e_est, err_est = self._AML.prediction(xlist)
+            e_grad = self._AML.predict_gradient(xlist)
+
+            if DEBUG:
+                print(f"[VQE] G Prediction {eval_count}: {e_est:.6f} +/- {err_est:.1e} @ X: {numpy.round(xlist, decimals=4)}")
+            if err_est > self._tol_prediction:
+                e_calc = self.get_energy(xlist)
+                self._AML.add_training_data([xlist], [e_calc], err=self._err)
+                e_est2, err_est2 = self._AML.prediction(xlist)
+                e_grad_2 = self._AML.predict_gradient(xlist)
+                if DEBUG:
+                    print(f"[VQE]   G Adjusted {eval_count}:  {e_est2:.6f} +/- {err_est2:.2e}, e_calc: {e_calc:.6f} @ X: {numpy.round(xlist, decimals=4)}")
+
+                # use new prediction
+                e_est = e_est2
+                e_grad = e_grad_2
+                self._aml_records["is_prediction"].append(0)
+            else:
+                self._aml_records["is_prediction"].append(1)
+            self._aml_records["evals"].append(e_est)
+
+            # setting this to float(x) works for some reason
+            return float(e_est), e_grad
 
         return evaluate_energy
 
@@ -320,13 +374,16 @@ class VQE:
         # If the AML is disabled, use the algorithmic energy function
         if self._AML is None:
             cost_fun = self._energy_function_algorithmic()
-        else:
+        elif OLD_OPTIMIZER:
             cost_fun = self._energy_function_artificial()
+        else:
+            cost_fun = self._energy_function_artificial_with_gradient()
 
         # Minimize the energy
-        print(cost_fun(self._x_list))
-        print(type(cost_fun(self._x_list)))
-        result = self._optimizer.minimize(cost_fun, self._x_list, bounds=self._x_bounds)
+        if OLD_OPTIMIZER:
+            result = self._optimizer.minimize(cost_fun, self._x_list, bounds=self._x_bounds)
+        else:
+            result = self._gradient_descent(cost_fun, self._x_list, bounds=self._x_bounds)
 
         # Print the results
         self.optimal_result = result
@@ -337,6 +394,36 @@ class VQE:
             print(f"Records: {self._aml_records}")
         if not self._aml_records["is_prediction"]:
             print(f"non-prediction times: {self._aml_records['is_prediction'].count(0)}")
+
+
+    # Gradient Descent
+    def _gradient_descent(self, cost_fun, x0, bounds) -> FakeResult:
+        min_step = 1e-3
+        max_step = 1
+        maxiter = 300
+
+        x0 = numpy.array(x0)
+        for _ in range(maxiter):
+            energy, gradient = cost_fun(x0)
+            step = max_step * (max_step/min_step) ** (_ / maxiter)
+            x0 -= step * gradient
+
+            # if any of the points are out of bounds, loop them back
+            for i in range(len(x0)):
+                lower = bounds[i][0]
+                upper = bounds[i][1]
+                if x0[i] < lower:
+                    x0[i] = upper - (lower - x0[i])
+                if x0[i] > upper:
+                    x0[i] = lower + (x0[i] - upper)
+
+            if DEBUG:
+                print(f"[VQE] Gradient Iteration {_}: Energy: {energy:.6f}, Gradient: {gradient}")
+
+        return FakeResult(x0)
+
+
+
 
     # Estimate t parameter (for AML)
     def estimate_t(self, num_sample: int = 100) -> None:

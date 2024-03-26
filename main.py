@@ -2,6 +2,9 @@
 import argparse
 from VQE import VQE
 
+# Control Panel
+DEBUG = True
+
 
 # Implement an argument parser
 parser = argparse.ArgumentParser(description='VQE')
@@ -11,12 +14,16 @@ parser.add_argument("-i", "--incar", type=str, help="Choose the INCAR file to us
 # Parse the arguments
 args = parser.parse_args()
 
+
 # Execution
 vqe = VQE(input_file=args.input, incar_file=args.incar)
 
-
-# Minimum energy
+# Minimize energy
+if DEBUG:
+    print("[MAIN] Minimizing the energy...\n")
 vqe.minimize_energy()
+if DEBUG:
+    print("[MAIN] Finished minimizing energy.\n")
 
 # Find the fidelity of the initial state
 fid = vqe.get_fidelity(vqe.x_list)

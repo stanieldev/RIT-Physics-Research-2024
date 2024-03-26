@@ -413,9 +413,20 @@ class VQE:
                 lower = bounds[i][0]
                 upper = bounds[i][1]
                 if x0[i] < lower:
-                    x0[i] = upper - (lower - x0[i])
+                    diff = abs(lower - x0[i])
+                    if diff < upper - lower:
+                        x0[i] = upper - diff * step
+                    else:
+                        x0[i] = (upper + lower)/2
+
                 if x0[i] > upper:
-                    x0[i] = lower + (x0[i] - upper)
+                    diff = abs(upper - x0[i])
+                    if diff < upper - lower:
+                        x0[i] = lower + diff * step
+                    else:
+                        x0[i] = (upper + lower)/2
+
+                assert lower <= x0[i] <= upper
 
             if DEBUG:
                 print(f"[VQE] Gradient Iteration {_}: Energy: {energy:.6f}, Gradient: {gradient}")

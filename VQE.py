@@ -15,7 +15,7 @@ from AML import AML
 
 # Control Panel
 DEBUG = True
-OLD_OPTIMIZER = False
+OLD_OPTIMIZER = True
 
 class VQECircuit:
     def __init__(self, circuit, parameters):

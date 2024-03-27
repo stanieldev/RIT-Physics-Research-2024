@@ -63,6 +63,7 @@ class AML:
         k_ab = self.kernel(self._theta_ai, self._theta_ai)
         # should use variance
         k_ab += numpy.diag(self._err_a)**2
+
         # assume one doesn't need regulaization due to the above term
         # which assumes self._errs > 1e-6.
         self._kbinv_ab = numpy.linalg.inv(k_ab)

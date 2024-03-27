@@ -1,5 +1,6 @@
 import itertools
 import numpy
+import heuristics
 
 
 # Control Panel
@@ -9,22 +10,29 @@ KERNAL_DEBUG = False
 # Agnostic kernel Eq.(21)
 def agnostic_kernel_46(theta_ai, theta_bi, const=1./117):
 
-    # The vector k sums are made in this list
-    vector_k_sum_indices = [[h1, h2] for h1, h2 in itertools.product(range(-4, 5), range(-6, 7))]
-    assert(len(theta_ai[0]) == len(theta_bi[0]) == 2)
+    USE_OLD = False
+    if USE_OLD:
+        # The vector k sums are made in this list
+        vector_k_sum_indices = [[h1, h2] for h1, h2 in itertools.product(range(-4, 5), range(-6, 7))]
+        assert(len(theta_ai[0]) == len(theta_bi[0]) == 2)
 
-    # Calculate the difference between the theta vectors
-    theta_abi = numpy.asarray([[numpy.asarray(vi1) - numpy.asarray(vi2) for vi2 in theta_bi] for vi1 in theta_ai])
+        # Calculate the difference between the theta vectors
+        theta_abi = numpy.asarray([[numpy.asarray(vi1) - numpy.asarray(vi2) for vi2 in theta_bi] for vi1 in theta_ai])
 
-    # Calculate the exponent and sum over the k indices
-    thetah_abk = numpy.einsum("abi,ki->abk", theta_abi, vector_k_sum_indices, optimize=True)*2j
+        # Calculate the exponent and sum over the k indices
+        thetah_abk = numpy.einsum("abi,ki->abk", theta_abi, vector_k_sum_indices, optimize=True)*2j
 
-    # Sum all the exponentials and multiply by the constant
-    res = numpy.exp(thetah_abk).sum(axis=2)*const
-    assert(numpy.all(abs(res.imag) < 1e-12))
+        # Sum all the exponentials and multiply by the constant
+        res = numpy.exp(thetah_abk).sum(axis=2)*const
+        assert(numpy.all(abs(res.imag) < 1e-12))
 
-    # Return the real part of the result
-    return res.real
+        # Return the real part of the result
+        return res.real
+    else:
+        heuristic_matrix = numpy.zeros((len(theta_ai), len(theta_bi)))
+        for a, b in itertools.product(range(len(theta_ai)), range(len(theta_bi))):
+            heuristic_matrix[a, b] = heuristics.paper_equation_11(theta_ai[a], theta_bi[b], [4, 6], const)
+        return heuristic_matrix
 
 
 def agnostic_kernel_46_gradient(theta_ai, theta_bi, const=None):

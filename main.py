@@ -1,6 +1,6 @@
 # Manage imports
 import argparse
-from vqe import VariationalQuantumEigensolver
+from vqe import VQE
 
 
 
@@ -20,7 +20,7 @@ args = parser.parse_args()
 # Run VQE solver
 INP_FILE = "source/inp.py"
 INCAR_FILE = "source/incar"
-vqe = VariationalQuantumEigensolver(
+vqe = VQE(
     inp_file=INP_FILE,
     incar_file=INCAR_FILE
 )
